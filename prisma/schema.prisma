@@ -1,0 +1,81 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Staff {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(255)
+  email     String   @unique @db.VarChar(255)
+  phone     String   @db.VarChar(100)
+  password  String   @db.Text
+  role      String?  @default("staff") @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("staff")
+}
+
+model BlogPost {
+  id        Int       @id @default(autoincrement())
+  slug      String?   @unique @db.VarChar(255)
+  title     String    @db.Text
+  author    String?   @db.VarChar(255)
+  date      DateTime? @default(now()) @db.Timestamptz(6)
+  excerpt   String?   @db.Text
+  body      String    @db.Text
+  coverId   String?   @map("cover_id") @db.Text
+  views     Int?      @default(0)
+  likes     Int?      @default(0)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("blog_posts")
+}
+
+model GalleryItem {
+  id        Int      @id @default(autoincrement())
+  driveId   String   @unique @map("drive_id") @db.Text
+  name      String?  @db.Text
+  alt       String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("gallery_items")
+}
+
+model Nomination {
+  id             Int      @id @default(autoincrement())
+  nomineeName    String   @map("nominee_name") @db.Text
+  nomineeEmail   String?  @map("nominee_email") @db.Text
+  nomineePhone   String?  @map("nominee_phone") @db.Text
+  organisation   String?  @db.Text
+  category       String   @db.Text
+  biography      String?  @db.Text
+  achievements   String?  @db.Text
+  impact         String?  @db.Text
+  reasons        String?  @db.Text
+  supporting     String?  @db.Text
+  nominatorName  String   @map("nominator_name") @db.Text
+  nominatorEmail String?  @map("nominator_email") @db.Text
+  nominatorPhone String?  @map("nominator_phone") @db.Text
+  status         String?  @default("Pending Review") @db.VarChar(50)
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("nominations")
+}
+
+model MediaFile {
+  id        Int      @id @default(autoincrement())
+  filename  String   @db.Text
+  mimeType  String   @map("mime_type") @db.Text
+  data      Bytes    @db.ByteA
+  size      Int
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("media_files")
+}

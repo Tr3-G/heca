@@ -1,0 +1,42 @@
+[
+  {
+    "id": "NOM-941754",
+    "nomineeName": "Dr. Fatima Umar",
+    "nomineeEmail": "fatima@example.com",
+    "nomineePhone": "+2348039998877",
+    "organisation": "Abuja Medical Centre",
+    "category": "Medicine & Healthcare",
+    "biography": "Renowned pediatric surgeon in Abuja.",
+    "achievements": "Conducted over 1,200 successful complex pediatric surgeries.",
+    "impact": "Founded free pediatric healthcare clinic for underprivileged families.",
+    "reasons": "Compassionate medical excellence and outstanding humanitarian impact.",
+    "supporting": "https://example.com/dr-fatima",
+    "nominatorName": "Dr. Kabir Sani",
+    "nominatorEmail": "kabir@example.com",
+    "nominatorPhone": "+2348021112233",
+    "status": "Under Review",
+    "notes": "Verification in progress",
+    "createdAt": "2026-11-02T21:45:41.754Z",
+    "updatedAt": "2026-11-02T21:45:41.778Z"
+  },
+  {
+    "id": "NOM-717223",
+    "nomineeName": "Hajiya Aisha Mohammed",
+    "nomineeEmail": "aisha@example.com",
+    "nomineePhone": "+2348030001122",
+    "organisation": "Northern Tech Women Initiative",
+    "category": "Technology & Innovation",
+    "biography": "Pioneer of digital literacy across northern Nigeria.",
+    "achievements": "Trained over 15,000 young women in software and cloud engineering.",
+    "impact": "Established 12 community innovation hubs in Abuja and neighbouring states.",
+    "reasons": "Visionary leadership and sustainable empowerment.",
+    "supporting": "https://example.com/aisha-profile",
+    "nominatorName": "Ibrahim Danladi",
+    "nominatorEmail": "ibrahim@example.com",
+    "nominatorPhone": "+2348021113344",
+    "status": "Shortlisted",
+    "notes": "Verified credentials, high impact.",
+    "createdAt": "2026-11-02T21:41:57.223Z",
+    "updatedAt": "2026-11-02T21:41:57.245Z"
+  }
+]
