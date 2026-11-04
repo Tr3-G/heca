@@ -48,6 +48,9 @@ export default function AdminNav({ currentUser }: { currentUser?: StaffUser | nu
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch {}
     localStorage.removeItem('heca_token');
+    document.cookie = 'heca_token=; Max-Age=0; path=/;';
+    document.cookie = 'token=; Max-Age=0; path=/;';
+    document.cookie = 'heca_session=; Max-Age=0; path=/;';
     window.location.href = '/admin/login';
   };
 

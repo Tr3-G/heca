@@ -37,13 +37,18 @@ export async function POST(req: Request) {
       },
     });
 
-    res.cookies.set('heca_session', token, {
+    // Store token in cookies ('heca_token' and 'token')
+    const cookieOptions = {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'lax' as const,
       maxAge: 7 * 24 * 60 * 60,
       path: '/',
-    });
+    };
+
+    res.cookies.set('heca_token', token, cookieOptions);
+    res.cookies.set('token', token, cookieOptions);
+    res.cookies.set('heca_session', token, cookieOptions);
 
     return res;
   } catch (err: any) {

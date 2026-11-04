@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { getSession, handleChangePassword, verifyStaffCredentials } from '@/lib/auth';
+import { getAuthFromRequest, handleChangePassword, verifyStaffCredentials } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get('authorization') || req.headers.get('x-admin-token');
-    const session = getSession(authHeader);
+    const session = getAuthFromRequest(req);
 
     const body = await req.json();
     const oldPassword = (body.oldPassword || body.currentPassword || '').trim();

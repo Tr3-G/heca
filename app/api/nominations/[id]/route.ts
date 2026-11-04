@@ -1,15 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getNominationById, deleteNomination, updateNomination } from '@/lib/db';
-import { getSession } from '@/lib/auth';
+import { getAuthFromRequest } from '@/lib/auth';
 
 function checkAuth(req: Request) {
-  const cookieHeader = req.headers.get('cookie') || '';
-  let cookieToken = '';
-  const match = cookieHeader.match(/heca_session=([^;]+)/);
-  if (match) cookieToken = match[1];
-
-  const authHeader = req.headers.get('authorization') || req.headers.get('x-admin-token') || cookieToken;
-  return getSession(authHeader);
+  return getAuthFromRequest(req);
 }
 
 export async function GET(

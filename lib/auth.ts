@@ -2,48 +2,151 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { getStaffByEmail, getStaffById, updateStaffPassword, StaffMember } from './db';
 
-// In-memory active sessions: token -> { id, email, name, role, phone, expiresAt }
-interface SessionData {
+const JWT_SECRET = process.env.JWT_SECRET || 'heca-secret-token-key-2027-pan-african-excellence';
+
+export interface TokenPayload {
   id: string | number;
   email: string;
   name: string;
   role: string;
   phone: string;
-  expiresAt: number;
+  exp: number; // Unix timestamp in seconds
 }
 
-const sessions = new Map<string, SessionData>();
+function base64UrlEncode(input: string | Buffer): string {
+  const buf = Buffer.isBuffer(input) ? input : Buffer.from(input, 'utf-8');
+  return buf.toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
 
-export function createSession(staff: StaffMember): string {
-  const token = crypto.randomBytes(32).toString('hex');
-  const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
-  sessions.set(token, {
+function base64UrlDecode(str: string): string {
+  let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (base64.length % 4) {
+    base64 += '=';
+  }
+  return Buffer.from(base64, 'base64').toString('utf-8');
+}
+
+/**
+ * Creates a stateless signed JWT token using HMAC SHA-256.
+ * The token contains the staff member's credentials and expires in 7 days.
+ */
+export function createToken(staff: StaffMember): string {
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const exp = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60; // 7 days in seconds
+  const payload: TokenPayload = {
     id: staff.id,
     email: staff.email,
     name: staff.name,
     role: staff.role,
     phone: staff.phone,
-    expiresAt,
-  });
-  return token;
+    exp,
+  };
+
+  const encodedHeader = base64UrlEncode(JSON.stringify(header));
+  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  const signature = crypto
+    .createHmac('sha256', JWT_SECRET)
+    .update(`${encodedHeader}.${encodedPayload}`)
+    .digest();
+  const encodedSignature = base64UrlEncode(signature);
+
+  return `${encodedHeader}.${encodedPayload}.${encodedSignature}`;
 }
 
-export function getSession(token: string | null | undefined): SessionData | null {
+/**
+ * Verifies the HMAC SHA-256 signature and expiration of a JWT token string.
+ */
+export function verifyToken(token: string | null | undefined): TokenPayload | null {
   if (!token) return null;
-  const cleanToken = token.startsWith('Bearer ') ? token.slice(7).trim() : token.trim();
-  const session = sessions.get(cleanToken);
-  if (!session) return null;
-  if (Date.now() > session.expiresAt) {
-    sessions.delete(cleanToken);
+  let cleanToken = token.startsWith('Bearer ') ? token.slice(7).trim() : token.trim();
+
+  // If token is URL-encoded, decode it
+  if (cleanToken.includes('%')) {
+    try {
+      cleanToken = decodeURIComponent(cleanToken);
+    } catch {}
+  }
+
+  const parts = cleanToken.split('.');
+  if (parts.length !== 3) return null;
+
+  const [encodedHeader, encodedPayload, encodedSignature] = parts;
+
+  // Compute expected signature
+  const expectedSignature = base64UrlEncode(
+    crypto.createHmac('sha256', JWT_SECRET).update(`${encodedHeader}.${encodedPayload}`).digest()
+  );
+
+  // Timing-safe comparison to guard against timing attacks
+  if (expectedSignature.length !== encodedSignature.length) return null;
+  try {
+    const isSignatureValid = crypto.timingSafeEqual(
+      Buffer.from(expectedSignature),
+      Buffer.from(encodedSignature)
+    );
+    if (!isSignatureValid) return null;
+  } catch {
     return null;
   }
-  return session;
+
+  try {
+    const payloadStr = base64UrlDecode(encodedPayload);
+    const payload: TokenPayload = JSON.parse(payloadStr);
+
+    // Verify token expiry
+    if (payload.exp && Date.now() / 1000 > payload.exp) {
+      return null;
+    }
+
+    return payload;
+  } catch {
+    return null;
+  }
 }
 
-export function removeSession(token: string | null | undefined): boolean {
-  if (!token) return false;
-  const cleanToken = token.startsWith('Bearer ') ? token.slice(7).trim() : token.trim();
-  return sessions.delete(cleanToken);
+/**
+ * Extracts and verifies authentication token directly from request cookies or headers.
+ * Checks cookies: 'heca_token', 'token', 'heca_session'.
+ * Checks headers: 'Authorization: Bearer <token>', 'x-admin-token'.
+ */
+export function getAuthFromRequest(req: Request): TokenPayload | null {
+  // 1. Check Cookie header (token stored in cookie)
+  const cookieHeader = req.headers.get('cookie') || '';
+  if (cookieHeader) {
+    // Match heca_token=..., token=..., or heca_session=...
+    const matches = cookieHeader.match(/(?:heca_token|token|heca_session)=([^;]+)/g);
+    if (matches) {
+      for (const m of matches) {
+        const val = m.split('=')[1]?.trim();
+        if (val) {
+          const verified = verifyToken(val);
+          if (verified) return verified;
+        }
+      }
+    }
+  }
+
+  // 2. Check Authorization or x-admin-token header
+  const authHeader = req.headers.get('authorization') || req.headers.get('x-admin-token');
+  if (authHeader) {
+    const verified = verifyToken(authHeader);
+    if (verified) return verified;
+  }
+
+  return null;
+}
+
+// Aliases for seamless backward compatibility
+export const createSession = createToken;
+export const getSession = (tokenOrReq: any): TokenPayload | null => {
+  if (!tokenOrReq) return null;
+  if (typeof tokenOrReq === 'object' && typeof tokenOrReq.headers?.get === 'function') {
+    return getAuthFromRequest(tokenOrReq);
+  }
+  return verifyToken(String(tokenOrReq));
+};
+export function removeSession(token?: string | null): boolean {
+  return true;
 }
 
 export async function verifyStaffCredentials(email: string, password: string): Promise<StaffMember | null> {
@@ -87,7 +190,7 @@ export async function handleForgotPassword(email: string): Promise<{ success: bo
   return {
     success: true,
     message: `Your password has been temporarily reset to your phone number (${tempPassword}). You can now log in using this temporary password and proceed to the Change Password page.`,
-    phone: tempPassword
+    phone: tempPassword,
   };
 }
 

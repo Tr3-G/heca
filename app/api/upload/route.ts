@@ -1,16 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { getAuthFromRequest } from '@/lib/auth';
 import { saveMediaFile } from '@/lib/db';
 import { sendJob } from '@/lib/queue';
 
 export async function POST(req: Request) {
-  const cookieHeader = req.headers.get('cookie') || '';
-  let cookieToken = '';
-  const match = cookieHeader.match(/heca_session=([^;]+)/);
-  if (match) cookieToken = match[1];
-
-  const authHeader = req.headers.get('authorization') || req.headers.get('x-admin-token') || cookieToken;
-  const session = getSession(authHeader);
+  const session = getAuthFromRequest(req);
 
   if (!session) {
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });

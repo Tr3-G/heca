@@ -22,20 +22,21 @@ export default function AdminLoginPage() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotMsg, setForgotMsg] = useState<{ text: string; isError: boolean } | null>(null);
   const [forgotLoading, setForgotLoading] = useState(false);
-  const [checking, setChecking] = useState(true);
-
-  // If already authenticated via cookie or token, redirect directly to /admin
+  // If already authenticated via token in localStorage, redirect directly to /admin
   useEffect(() => {
-    fetch('/api/auth/check')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.authenticated) {
-          router.replace('/admin');
-        } else {
-          setChecking(false);
-        }
+    const token = localStorage.getItem('heca_token');
+    if (token) {
+      fetch('/api/auth/check', {
+        headers: { Authorization: `Bearer ${token}` },
       })
-      .catch(() => setChecking(false));
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.authenticated) {
+            router.replace('/admin');
+          }
+        })
+        .catch(() => {});
+    }
   }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -105,14 +106,6 @@ export default function AdminLoginPage() {
       setForgotLoading(false);
     }
   };
-
-  if (checking) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader2 size={32} className="animate-spin" color="var(--gold-500)" />
-      </div>
-    );
-  }
 
   return (
     <>

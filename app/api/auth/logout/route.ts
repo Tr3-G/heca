@@ -11,6 +11,8 @@ export async function POST(req: Request) {
   removeSession(authHeader);
 
   const res = NextResponse.json({ success: true, message: 'Logged out successfully' });
+  res.cookies.delete('heca_token');
+  res.cookies.delete('token');
   res.cookies.delete('heca_session');
   return res;
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getPosts, createPost } from '@/lib/db';
-import { getSession } from '@/lib/auth';
+import { getAuthFromRequest } from '@/lib/auth';
 
 export async function GET() {
   try {
@@ -12,8 +12,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const authHeader = req.headers.get('authorization') || req.headers.get('x-admin-token');
-  const session = getSession(authHeader);
+  const session = getAuthFromRequest(req);
 
   if (!session) {
     return NextResponse.json(
